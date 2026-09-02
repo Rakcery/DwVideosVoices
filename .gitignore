@@ -1,1 +1,10 @@
 __pycache__/
+*.pyc
+config.json
+links.json
+DWcvideos/
+build/
+dist/
+*.spec
+.venv/
+venv/
