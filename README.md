@@ -1,51 +1,89 @@
-# 📥 DWvideos — Clipboard Video Downloader
+# DW Videos & Voices
 
-Panoya kopyalanan video bağlantılarını arka planda otomatik olarak yakalayan ve tek tıkla toplu ya da tekil indirme imkanı sunan modern masaüstü uygulaması.
-
----
+Video ve ses içeriklerini kolay bir şekilde indirip yönetmek için geliştirilmiş, Python tabanlı masaüstü uygulaması.
 
 ## ✨ Özellikler
 
-* **Otomatik Pano Takibi:** Kopyaladığın YouTube, TikTok, Instagram, Twitter vb. bağlantıları elle yapıştırmaya gerek kalmadan anında listeye ekler.
-* **Geniş Platform Desteği:**
-  * **TikTok:** Filigransız, sesli ve H.264 uyumlu doğrudan indirme.
-  * **YouTube & Diğerleri:** `yt-dlp` altyapısıyla en yüksek kalitede video/ses çekme.
-* **Çözünürlük ve Format Seçenekleri:** 1080p, 720p, 480p, 360p gibi video formatları veya **Sadece Ses (MP3)** seçeneği.
-* **Doğrudan Konumu Göster:** İndirilen videonun yanındaki `[KONUMU GÖSTER]` butonu ile dosyayı Windows Gezgini'nde doğrudan seçili olarak açma.
-* **Özel Klasör Seçimi:** İndirilen dosyaların kaydedileceği dizini arayüz üzerinden dilediğin gibi belirleme.
-* **Minimalist & Modern Arayüz:** CustomTkinter ile hazırlanmış koyu tema ve şık kontrol paneli.
+* 🎥 Desteklenen platformlardan video indirme
+* 🎵 Videolardan yalnızca ses indirme
+* 📋 Kopyalanan bağlantıları otomatik olarak algılama
+* 🖥️ Kullanıcı dostu grafik arayüz (GUI)
+* ⚙️ İndirme ayarlarını yapılandırabilme
+* 💾 İndirilen içerikleri yerel olarak yönetme
+* 🚀 Hafif ve kullanımı kolay yapı
 
----
+## 📁 Proje Yapısı
 
-## 🛠️ Kurulum ve Çalıştırma
+```text
+DwVideosVoices/
+│
+├── main.py                 # Uygulamanın başlangıç noktası
+├── gui.py                  # Grafik kullanıcı arayüzü
+├── downloader.py           # Video ve ses indirme işlemleri
+├── clipboard_watcher.py    # Pano bağlantılarını takip eder
+├── storage.py              # Yerel veri ve depolama işlemleri
+├── theme.py                # Uygulama teması ve görünümü
+├── config.json             # Uygulama ayarları
+├── links.json              # Kaydedilen bağlantılar/veriler
+├── icon.ico                # Uygulama ikonu
+└── DWvideos.spec           # PyInstaller yapılandırması
+```
 
-Projeyi kaynak koddan çalıştırmak için aşağıdaki adımları izleyin:
+## 🛠️ Gereksinimler
 
-### 1. Depoyu Klonlayın
+* Python 3.10 veya üzeri
+* Windows
+* Gerekli Python kütüphaneleri
+
+## 📥 Kurulum
+
+Öncelikle projeyi bilgisayarınıza klonlayın:
+
 ```bash
-git clone [https://github.com/kullanici-adi/DWvideos.git](https://github.com/kullanici-adi/DWvideos.git)
-cd DWvideos
+git clone https://github.com/Rakcery/DwVideosVoices.git
+cd DwVideosVoices
+```
 
-2. Gerekli Kütüphaneleri Yükleyin
+Daha sonra gerekli Python kütüphanelerini yükleyin:
+
+```bash
 pip install -r requirements.txt
+```
 
-3. Uygulamayı Başlatın
+## ▶️ Uygulamayı Çalıştırma
+
+Uygulamayı başlatmak için:
+
+```bash
 python main.py
+```
 
-📦 Gereksinimler
+Komut çalıştırıldığında uygulamanın grafik arayüzü açılacaktır.
 
-Python 3.10+
+## 📦 EXE Oluşturma
 
-customtkinter
+Projeyi Python yüklü olmayan bilgisayarlarda da çalıştırabilmek için PyInstaller kullanarak `.exe` dosyası oluşturabilirsiniz.
 
-yt-dlp
+```bash
+pyinstaller DWvideos.spec
+```
 
-requests
+İşlem tamamlandıktan sonra oluşturulan uygulamayı `dist` klasörü içerisinde bulabilirsiniz.
 
-pyperclip
+## ⚙️ Çalışma Mantığı
 
-imageio-ffmpeg
+Uygulama, kullanıcının panosuna kopyaladığı bağlantıları algılayarak indirme işlemini kolaylaştırır.
 
-📄 Lisans
+Kullanıcı, grafik arayüz üzerinden indirme işlemlerini yönetebilir ve video veya ses formatında içerik indirebilir.
 
-Bu proje kişisel kullanım ve eğitim amacıyla geliştirilmiştir.
+Proje içerisindeki farklı işlemler ayrı Python dosyalarına bölünerek daha düzenli ve yönetilebilir bir yapı oluşturulmuştur.
+
+## ⚠️ Yasal Uyarı
+
+Bu proje eğitim ve kişisel kullanım amacıyla geliştirilmiştir.
+
+İndirdiğiniz içeriklerin kullanım haklarına sahip olduğunuzdan veya gerekli izinlere sahip olduğunuzdan emin olun. Kullandığınız platformların kullanım koşullarına ve telif hakkı yasalarına uyun.
+
+## 📄 Lisans
+
+Bu proje şu anda herhangi bir açık kaynak lisansı belirtmemektedir.
