@@ -1,1 +1,4 @@
 __pycache__/
+config.json
+links.json
+*.spec
