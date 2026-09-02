@@ -160,7 +160,7 @@ def _build_format(height):
     return f"bv*[height<={height}]+ba/b[height<={height}]/b"
 
 def _download_tiktok_direct(url, quality, progress_callback=None):
-    """TikTok videolarını sesli, filigransız ve bot engeline takılmadan indirir."""
+    """TikTok videolarını sesli, filigransız, H.264 formatında ve codec hatasız indirir."""
     api_url = "https://www.tikwm.com/api/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
@@ -174,38 +174,68 @@ def _download_tiktok_direct(url, quality, progress_callback=None):
     
     video_data = data.get("data", {})
     title = video_data.get("title", "tiktok_video")
-    # Dosya adında yasaklı karakterleri temizle
     safe_title = re.sub(r'[\\/*?:"<>|]', "", title)[:60].strip() or "tiktok_video"
     
     if quality == "audio_only":
         download_url = video_data.get("music")
         ext = "mp3"
     else:
-        # Öncelik sesli HD video, yoksa normal sesli play URL'si
         download_url = video_data.get("hdplay") or video_data.get("play")
         ext = "mp4"
 
     if not download_url:
         return False, "İndirme bağlantısı alınamadı."
 
-    # URL başında domain yoksa (relative link geldiyse) tikwm.com domainini ekle:
     if download_url.startswith("/"):
         download_url = f"https://www.tikwm.com{download_url}"
 
     file_path = DOWNLOAD_DIR / f"{safe_title}.{ext}"
 
-    # Stream ile indir ve arayüzdeki ilerleme çubuğunu besle
-    with requests.get(download_url, stream=True, headers=headers, timeout=30) as r:
-        r.raise_for_status()
-        total_length = int(r.headers.get('content-length', 0))
-        downloaded = 0
-        with open(file_path, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024 * 64):
-                if chunk:
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    if progress_callback and total_length > 0:
-                        progress_callback(downloaded / total_length)
+    # Eğer sadece ses istenmediyse, videoyu önce geçici dosyaya indirip ffmpeg ile H.264'e çevirelim
+    if quality == "audio_only":
+        with requests.get(download_url, stream=True, headers=headers, timeout=30) as r:
+            r.raise_for_status()
+            total_length = int(r.headers.get('content-length', 0))
+            downloaded = 0
+            with open(file_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024 * 64):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if progress_callback and total_length > 0:
+                            progress_callback(downloaded / total_length)
+    else:
+        temp_input = DOWNLOAD_DIR / f"temp_in_{safe_title}.mp4"
+        with requests.get(download_url, stream=True, headers=headers, timeout=30) as r:
+            r.raise_for_status()
+            total_length = int(r.headers.get('content-length', 0))
+            downloaded = 0
+            with open(temp_input, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024 * 64):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if progress_callback and total_length > 0:
+                            progress_callback(downloaded / total_length)
+
+        # FFmpeg ile H.264 (libx264) formatına yeniden kodla (Codec hatasını %100 çözer)
+        cmd = [
+            FFMPEG_EXE, "-y",
+            "-i", str(temp_input),
+            "-c:v", "libx264",
+            "-crf", "23",
+            "-c:a", "aac",
+            str(file_path)
+        ]
+        try:
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        except Exception as e:
+            if temp_input.exists():
+                temp_input.unlink()
+            return False, f"Video dönüştürme hatası: {str(e)}"
+        
+        if temp_input.exists():
+            temp_input.unlink()
 
     return True, None
 
