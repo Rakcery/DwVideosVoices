@@ -1,4 +1,16 @@
 __pycache__/
+<<<<<<< HEAD
 config.json
 links.json
 *.spec
+=======
+*.pyc
+config.json
+links.json
+DWcvideos/
+build/
+dist/
+*.spec
+.venv/
+venv/
+>>>>>>> a317223aebc4f06701a3a7cdad8797bc5d86601f

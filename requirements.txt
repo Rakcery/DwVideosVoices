@@ -1,0 +1,5 @@
+customtkinter
+yt-dlp
+requests
+pyperclip
+imageio-ffmpeg

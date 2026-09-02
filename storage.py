@@ -1,13 +1,19 @@
 import json
 import os
 import threading
+from pathlib import Path
 
-LIST_FILE = "links.json"
+# 1. Uygulama verileri için gizli AppData klasörünü ayarla ve oluştur
+app_data_dir = Path(os.getenv('APPDATA')) / "DWvideos"
+app_data_dir.mkdir(parents=True, exist_ok=True)
+
+# 2. Dosya yollarını güncelleyerek bu gizli klasöre bağla
+LIST_FILE = str(app_data_dir / "links.json")
+CONFIG_FILE = str(app_data_dir / "config.json")
 
 # GUI ve clipboard izleyici thread'i aynı listeye dokunuyor, o yüzden
 # her okuma/yazmada bu lock kullanılıyor.
 lock = threading.Lock()
-
 
 def load_links():
     if os.path.exists(LIST_FILE):
@@ -18,13 +24,9 @@ def load_links():
             return []
     return []
 
-
 def save_links(links):
     with open(LIST_FILE, "w", encoding="utf-8") as f:
         json.dump(links, f, ensure_ascii=False, indent=2)
-
-
-CONFIG_FILE = "config.json"
 
 def load_config():
     if os.path.exists(CONFIG_FILE):

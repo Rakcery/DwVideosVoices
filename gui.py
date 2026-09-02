@@ -1,15 +1,15 @@
 import json
+import os
+import subprocess
 import threading
 from tkinter import messagebox
 from customtkinter import filedialog
-from storage import load_config, save_config
-import downloader
-
 import customtkinter as ctk
 
-from theme import INK, LINE, PAPER, DIM, BRASS, MOSS, RUST
-from storage import lock, save_links
+import downloader
 from downloader import download, QUALITY_OPTIONS, DEFAULT_QUALITY, DOWNLOAD_DIR_NAME
+from storage import load_config, save_config, lock, save_links
+from theme import INK, LINE, PAPER, DIM, BRASS, MOSS, RUST
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -91,13 +91,24 @@ class App:
         return path_str if len(path_str) < 20 else "..." + path_str[-17:]
 
     def choose_folder(self):
-        # parent=self.root ekledik, böylece klasör seçici penceresi uygulamanın arkasına saklanmayacak!
         folder = filedialog.askdirectory(parent=self.root, title="İndirme Klasörü Seç")
         if folder:
             downloader.set_download_dir(folder)
             self.config["download_dir"] = folder
             save_config(self.config)
             self.folder_btn.configure(text=self._shorten_path(folder))
+
+    def show_in_folder(self, file_path=None):
+        """Dosyayı Gezgin'de seçili gösterir; dosya taşındıysa veya yoksa klasörü açar."""
+        try:
+            if file_path and os.path.exists(file_path):
+                subprocess.run(f'explorer /select,"{os.path.abspath(file_path)}"')
+            else:
+                target_dir = downloader.DOWNLOAD_DIR
+                os.makedirs(target_dir, exist_ok=True)
+                os.startfile(target_dir)
+        except Exception as e:
+            messagebox.showerror("Hata", f"Klasör açılamadı: {e}")
 
     def _build_list(self):
         self.list_frame = ctk.CTkScrollableFrame(
@@ -173,7 +184,9 @@ class App:
 
     def _build_row(self, item, index):
         url = item["url"]
-        done = item["downloaded"]
+        # Kesin boolean kontrolü (True değilse done False sayılır)
+        done = bool(item.get("downloaded") is True)
+        file_path = item.get("file_path")
         is_checked = url in self.selected_urls
         is_downloading = url in self.downloading_urls
 
@@ -198,26 +211,45 @@ class App:
                                 font=ctk.CTkFont(family=MONO, size=11))
         url_lbl.grid(row=0, column=3, sticky="ew", padx=(4, 12), pady=(9, 0))
 
+        # Alt bilgi alanı
+        info_frame = ctk.CTkFrame(row, fg_color="transparent")
+        info_frame.grid(row=1, column=3, sticky="w", padx=(4, 12), pady=(0, 9))
+
         if is_downloading:
             tag_text, tag_color = "[AKTARILIYOR]", BRASS
         elif done:
             tag_text, tag_color = "[İNDİRİLDİ]", MOSS
         else:
             tag_text, tag_color = "[BEKLİYOR]", DIM
-        tag_lbl = ctk.CTkLabel(row, text=tag_text, text_color=tag_color, anchor="w",
-                                font=ctk.CTkFont(family=MONO, size=9))
-        tag_lbl.grid(row=1, column=3, sticky="w", padx=(4, 12), pady=(0, 9))
 
-        for widget in (row, check_lbl, num_lbl, url_lbl, tag_lbl):
+        tag_lbl = ctk.CTkLabel(info_frame, text=tag_text, text_color=tag_color, anchor="w",
+                                font=ctk.CTkFont(family=MONO, size=9))
+        tag_lbl.pack(side="left")
+
+        # Buton YALNIZCA VE YALNIZCA indirme bittiyse (done == True) ve şu an inmiyorsa çizilir
+        if done and not is_downloading:
+            show_btn = ctk.CTkButton(
+                info_frame,
+                text="[KONUMU GÖSTER]",
+                text_color=BRASS,
+                fg_color="transparent",
+                hover_color=LINE,
+                font=ctk.CTkFont(family=MONO, size=9),
+                height=18,
+                width=80,
+                command=lambda p=file_path: self.show_in_folder(p)
+            )
+            show_btn.pack(side="left", padx=(10, 0))
+
+        for widget in (row, check_lbl, num_lbl, url_lbl, tag_lbl, info_frame):
             widget.bind("<Button-1>", lambda e, u=url: self._toggle_selected(u))
 
         progress = ctk.CTkProgressBar(row, height=2, fg_color=INK, progress_color=BRASS)
         progress.set(0)
         progress.grid(row=2, column=1, columnspan=3, sticky="we", padx=(10, 12), pady=(0, 5))
-        progress.grid_remove()  # Sadece indirme başlarken görünür olacak
-        self.progress_bars[url] = progress  # Çubuğu url ile eşleştirerek sakla
+        progress.grid_remove()
+        self.progress_bars[url] = progress
         
-        # O çubuğun üstüne tıklanınca da seçme işlemi çalışsın
         progress.bind("<Button-1>", lambda e, u=url: self._toggle_selected(u))
 
         return row
@@ -259,7 +291,7 @@ class App:
 
     def download_all(self):
         with lock:
-            targets = [item["url"] for item in self.links if not item["downloaded"]]
+            targets = [item["url"] for item in self.links if not item.get("downloaded", False)]
         if not targets:
             return
         threading.Thread(target=self._run_downloads, args=(targets,), daemon=True).start()
@@ -268,7 +300,6 @@ class App:
         quality = self.quality_var.get()
         self.downloading_urls.update(urls)
         
-        # Thread içinden ana GUI'yi güvenle güncellemek için yardımcı
         def update_ui(cb):
             self.root.after(0, cb)
             
@@ -278,29 +309,26 @@ class App:
         for url in urls:
             target_item = next((i for i in self.links if i["url"] == url), None)
             
-            # İndirme başlarken çubuğu göster ve sıfırla
             update_ui(lambda u=url: (self.progress_bars[u].set(0), self.progress_bars[u].grid()) if u in self.progress_bars else None)
 
             def progress_hook(pct, u=url):
                 if u in self.progress_bars:
                     update_ui(lambda: self.progress_bars[u].set(pct))
 
-            # Downloader'a callback'i paslıyoruz
-            ok, err = downloader.download(url, quality, progress_callback=progress_hook)
+            ok, result = downloader.download(url, quality, progress_callback=progress_hook)
             
             self.downloading_urls.discard(url)
-            
-            # İndirme bitince çubuğu tekrar gizle
             update_ui(lambda u=url: self.progress_bars[u].grid_remove() if u in self.progress_bars else None)
                 
             if ok:
                 with lock:
                     if target_item:
                         target_item["downloaded"] = True
+                        target_item["file_path"] = result
                     save_links(self.links)
                 self.selected_urls.discard(url)
             else:
-                update_ui(lambda u=url, e=err: messagebox.showerror("Hata", f"{u}\n\n{e}"))
+                update_ui(lambda u=url, e=result: messagebox.showerror("Hata", f"{u}\n\n{e}"))
                 
             update_ui(lambda: self.refresh_list(force=True))
 
