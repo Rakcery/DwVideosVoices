@@ -132,14 +132,14 @@ def download(url, quality=DEFAULT_QUALITY, progress_callback=None):
     height = QUALITY_OPTIONS.get(quality)
     output_template = str(DOWNLOAD_DIR / "%(title)s.%(ext)s")
 
-    # 1. TİKTOK İÇİN ÖZEL AKIŞ (Sesli, filigransız ve engelsiz)
+    # 1. TİKTOK İÇİN ÖZEL AKIŞ
     if "tiktok.com" in url.lower():
         try:
             return _download_tiktok_direct(url, quality, progress_callback)
         except Exception as e:
             return False, f"TikTok indirme hatası: {str(e)[-150:]}"
 
-    # 2. DİĞER PLATFORMLAR İÇİN YT-DLP AKIŞI (YouTube, Instagram vb.)
+    # 2. DİĞER PLATFORMLAR İÇİN YT-DLP AKIŞI
     ydl_opts = {
         'outtmpl': output_template,
         'ffmpeg_location': FFMPEG_EXE,
@@ -171,16 +171,27 @@ def download(url, quality=DEFAULT_QUALITY, progress_callback=None):
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        return True, None
+            info = ydl.extract_info(url, download=True)
+            # yt-dlp'nin oluşturduğu dosya adını alalım
+            filename = ydl.prepare_filename(info)
+            if height == "audio_only":
+                filename = os.path.splitext(filename)[0] + ".mp3"
+            elif not filename.endswith(".mp4"):
+                filename = os.path.splitext(filename)[0] + ".mp4"
+            return True, filename
     except Exception as e:
         err_msg = str(e)
         if "Unexpected response" in err_msg or "Sign in" in err_msg:
             try:
                 ydl_opts['cookiesfrombrowser'] = (COOKIES_BROWSER,)
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
-                return True, None
+                    info = ydl.extract_info(url, download=True)
+                    filename = ydl.prepare_filename(info)
+                    if height == "audio_only":
+                        filename = os.path.splitext(filename)[0] + ".mp3"
+                    elif not filename.endswith(".mp4"):
+                        filename = os.path.splitext(filename)[0] + ".mp4"
+                    return True, filename
             except Exception as e2:
                 return False, f"İndirilemedi: {str(e2)[-150:]}"
                 
