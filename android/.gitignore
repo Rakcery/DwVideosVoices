@@ -1,0 +1,4 @@
+.buildozer/
+bin/
+dw_test_out/
+__pycache__/
