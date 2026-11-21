@@ -8,7 +8,7 @@ source.exclude_dirs = bin,.buildozer,dw_test_out
 version = 1.0
 
 # Python paketleri. openssl: https için, sqlite3/liblzma: yt-dlp'nin istediği standart modüller
-requirements = python3,kivy==2.3.1,pyjnius,android,openssl,sqlite3,liblzma,certifi,yt-dlp,charset-normalizer==3.4.9
+requirements = python3,kivy==2.3.1,pyjnius,android,openssl,sqlite3,liblzma,certifi,yt-dlp,charset_normalizer@https://files.pythonhosted.org/packages/98/2b/f97f1c193fb855c345d678f5077d6926034db0722df74c8f057020e05a25/charset_normalizer-3.4.9-py3-none-any.whl
 
 icon.filename = %(source.dir)s/icon.png
 orientation = portrait
