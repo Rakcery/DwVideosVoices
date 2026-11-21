@@ -27,7 +27,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip autoconf automake libtool pkg-config \
-            zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev lld
+            zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev lld libltdl-dev
 
       - name: Buildozer kur
         run: |
